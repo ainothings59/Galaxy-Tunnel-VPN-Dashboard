@@ -86,35 +86,63 @@ function extractPingHost(config: string, location: string): string {
 
 async function pingServer(server: Server): Promise<PingResult> {
   const host = extractPingHost(server.config, server.location);
+  if (!host) {
+    return { ms: null, status: 'offline' };
+  }
+
   const protocol = host.startsWith('http://') || host.startsWith('https://') ? '' : 'https://';
   const url = `${protocol}${host}`;
   const start = performance.now();
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-    await fetch(url, {
-      method: 'HEAD',
-      mode: 'no-cors',
+    // Make standard fetch request to check if worker endpoint actually responds
+    const response = await fetch(url, {
+      method: 'GET',
       cache: 'no-store',
       signal: controller.signal
-    }).catch(() => {
-      // Catch network errors; duration measures TCP/TLS reachability latency
+    }).catch(err => {
+      // If CORS blocks GET, fallback to HEAD ping
+      return null;
     });
 
     clearTimeout(timeoutId);
     const ms = Math.round(performance.now() - start);
 
-    if (ms >= 2950) {
-      return { ms: null, status: 'offline' };
-    }
-    return { ms, status: 'online' };
-  } catch {
-    const ms = Math.round(performance.now() - start);
-    if (ms < 2950) {
+    // If server responded with 404 (Worker Deleted), 521/522/523 (Server Down), mark OFFLINE
+    if (response) {
+      if (response.status === 404 || response.status >= 520 || response.status === 502) {
+        return { ms: null, status: 'offline' };
+      }
       return { ms, status: 'online' };
     }
+
+    // Secondary reachability check with strict error handling
+    const secondaryController = new AbortController();
+    const secTimeout = setTimeout(() => secondaryController.abort(), 2500);
+    const headStart = performance.now();
+
+    try {
+      await fetch(url, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        cache: 'no-store',
+        signal: secondaryController.signal
+      });
+      clearTimeout(secTimeout);
+      const headMs = Math.round(performance.now() - headStart);
+      if (headMs >= 2400) {
+        return { ms: null, status: 'offline' };
+      }
+      return { ms: headMs, status: 'online' };
+    } catch {
+      clearTimeout(secTimeout);
+      // Connection refused, aborted, or DNS error -> Definite OFFLINE
+      return { ms: null, status: 'offline' };
+    }
+  } catch {
     return { ms: null, status: 'offline' };
   }
 }

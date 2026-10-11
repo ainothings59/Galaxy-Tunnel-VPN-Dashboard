@@ -1,6 +1,6 @@
 {
-  "name": "VPN Config Share Hub",
-  "description": "A clean, public platform for sharing and finding Vless and Trojan VPN configurations.",
+  "name": "Galaxy Tunnel – Free High-Speed VLESS & Trojan VPN Hub",
+  "description": "Galaxy Tunnel – High-speed, secure, and free public VLESS and Trojan VPN configurations with live ping checks and sublink generator.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
