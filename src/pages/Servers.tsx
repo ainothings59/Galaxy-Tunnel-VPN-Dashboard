@@ -1,4 +1,5 @@
-import { AlertCircle, CheckCircle2, Copy, Globe, Loader2, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Copy, Download, Globe, Loader2, QrCode, RefreshCw, ShieldCheck, X, Zap } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import React, { useEffect, useState } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { i18n } from '../i18n';
@@ -240,6 +241,8 @@ export function Servers() {
       return false;
     }
   });
+  const [selectedQrServer, setSelectedQrServer] = useState<Server | null>(null);
+  const [qrModalCopied, setQrModalCopied] = useState<boolean>(false);
 
   const rePingSingleServer = async (srv: Server) => {
     setPings(prev => ({
@@ -336,6 +339,142 @@ export function Servers() {
     }
   };
 
+  const handleDownloadServerQR = (server: Server) => {
+    try {
+      const qrDomCanvas = document.getElementById(`server-qr-canvas-${server.id}`) as HTMLCanvasElement;
+      if (!qrDomCanvas) return;
+
+      const scale = 2; // Retina scale
+      const canvas = document.createElement('canvas');
+      canvas.width = 440 * scale;
+      canvas.height = 240 * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.scale(scale, scale);
+
+      // Card Background (Dark Navy Cyber Gradient)
+      const grad = ctx.createLinearGradient(0, 0, 440, 240);
+      grad.addColorStop(0, '#0a1128');
+      grad.addColorStop(1, '#050c1e');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(0, 0, 440, 240, 20);
+      } else {
+        ctx.rect(0, 0, 440, 240);
+      }
+      ctx.fill();
+
+      // Border stroke
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Glow accent
+      const glow = ctx.createRadialGradient(380, 40, 0, 380, 40, 160);
+      glow.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, 440, 240);
+
+      // QR Code container Box
+      const qrBoxX = 22;
+      const qrBoxY = 24;
+      const qrBoxSize = 192;
+      const qrPadding = 12;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 14);
+      } else {
+        ctx.fillRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
+      }
+      ctx.fill();
+
+      // Draw QR on canvas
+      ctx.drawImage(
+        qrDomCanvas, 
+        qrBoxX + qrPadding, 
+        qrBoxY + qrPadding, 
+        qrBoxSize - (qrPadding * 2), 
+        qrBoxSize - (qrPadding * 2)
+      );
+
+      // Right Column Text
+      const textX = 236;
+
+      // Brand Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 19px "Orbitron", system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('GALAXY TUNNEL', textX, 48);
+
+      // Server Name & Protocol
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillText(server.name.toUpperCase(), textX, 72);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.fillText(server.description || 'Cloudflare Anycast Zero-Log', textX, 90);
+
+      // Badge
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.15)';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(textX, 110, 175, 26, 6);
+      } else {
+        ctx.fillRect(textX, 110, 175, 26);
+      }
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+      ctx.stroke();
+
+      ctx.fillStyle = '#22d3ee';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.fillText('FREE HIGH-SPEED NODE', textX + 10, 127);
+
+      // Divider line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.beginPath();
+      ctx.moveTo(textX, 158);
+      ctx.lineTo(418, 158);
+      ctx.stroke();
+
+      // Footer Instructions
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.fillText('⚡ Scan with v2rayNG / Sing-box', textX, 180);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px monospace, sans-serif';
+      ctx.fillText(`DATE: ${new Date().toLocaleDateString()} • UNLIMITED`, textX, 202);
+
+      // Export as PNG and trigger direct download
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const sanitizedName = server.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+      a.download = `galaxy-${sanitizedName}-qr.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showToast(t.downloadQrToast || 'QR Code ပုံ ဒေါင်းလုဒ်ရယူပြီးပါပြီ', {
+        subtitle: language === 'my' ? 'ဖုန်းဓာတ်ပုံများထဲတွင် သိမ်းဆည်းပြီးပါပြီ' : 'Saved to your device gallery/downloads',
+        type: 'success',
+        duration: 3500
+      });
+    } catch (err) {
+      console.error('Download QR failed', err);
+      showToast(language === 'my' ? 'QR ပုံ ဒေါင်းလုဒ်မအောင်မြင်ပါ' : 'Failed to download QR image', {
+        type: 'warning'
+      });
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Top Header & Tagline Bar */}
@@ -414,82 +553,99 @@ export function Servers() {
 
                 {/* Inner Card Content */}
                 <div className="edge-light-inner bg-white dark:bg-[#1a1a18] p-4 flex flex-col justify-between">
-                  <div className="flex justify-between items-start mb-2.5 gap-2">
-                    <h3 className="font-bold text-stone-900 dark:text-stone-100 tracking-tight">{server.name}</h3>
+                  <div className="flex justify-between items-start mb-3 gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-stone-900 dark:text-stone-100 tracking-tight text-base sm:text-lg truncate">
+                        {server.name}
+                      </h3>
+                      
+                      <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-300 mt-1">
+                        <Globe className="w-4 h-4 text-sky-500 shrink-0 animate-pulse" />
+                        <span className="truncate">{server.location}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 mt-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <span className="truncate">{server.description}</span>
+                      </div>
+                    </div>
                     
-                    {/* On-Demand Ping Button / Status Badge */}
-                    {(() => {
-                      const ping = pings[server.id];
+                    {/* Right Action Column: Ping Button at top & QR Code Button directly underneath */}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {/* On-Demand Ping Button / Status Badge */}
+                      {(() => {
+                        const ping = pings[server.id];
 
-                      if (!ping) {
-                        return (
-                          <button 
-                            onClick={() => rePingSingleServer(server)}
-                            className="text-xs font-semibold px-2.5 py-1 flex items-center gap-1.5 rounded-md bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-stone-300 hover:bg-emerald-100 hover:text-emerald-800 dark:hover:bg-emerald-950/50 dark:hover:text-emerald-400 border border-stone-200 dark:border-zinc-700 transition-all"
-                          >
-                            <Zap className="w-3 h-3 text-stone-400 dark:text-stone-500" />
-                            <span>{t.pingSingleBtn}</span>
-                          </button>
-                        );
-                      }
+                        if (!ping) {
+                          return (
+                            <button 
+                              onClick={() => rePingSingleServer(server)}
+                              className="text-xs font-semibold px-2.5 py-1.5 flex items-center gap-1.5 rounded-md bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-stone-300 hover:bg-emerald-100 hover:text-emerald-800 dark:hover:bg-emerald-950/50 dark:hover:text-emerald-400 border border-stone-200 dark:border-zinc-700 transition-all cursor-pointer"
+                            >
+                              <Zap className="w-3 h-3 text-stone-400 dark:text-stone-500" />
+                              <span>{t.pingSingleBtn}</span>
+                            </button>
+                          );
+                        }
 
-                      if (ping.status === 'testing') {
-                        return (
-                          <button 
-                            disabled
-                            className="text-xs font-semibold px-2.5 py-1 flex items-center gap-1.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400 opacity-90 cursor-wait"
-                          >
-                            <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
-                            <span>{t.pingTesting}</span>
-                          </button>
-                        );
-                      }
+                        if (ping.status === 'testing') {
+                          return (
+                            <button 
+                              disabled
+                              className="text-xs font-semibold px-2.5 py-1.5 flex items-center gap-1.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400 opacity-90 cursor-wait"
+                            >
+                              <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                              <span>{t.pingTesting}</span>
+                            </button>
+                          );
+                        }
 
-                      if (ping.status === 'online' && ping.ms !== null) {
-                        let badgeStyle = "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400";
-                        let dotStyle = "bg-emerald-500";
-                        if (ping.ms > 400) {
-                          badgeStyle = "bg-orange-100 text-orange-800 dark:bg-orange-500/10 dark:text-orange-400";
-                          dotStyle = "bg-orange-500";
-                        } else if (ping.ms > 200) {
-                          badgeStyle = "bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400";
-                          dotStyle = "bg-amber-500";
+                        if (ping.status === 'online' && ping.ms !== null) {
+                          let badgeStyle = "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400";
+                          let dotStyle = "bg-emerald-500";
+                          if (ping.ms > 400) {
+                            badgeStyle = "bg-orange-100 text-orange-800 dark:bg-orange-500/10 dark:text-orange-400";
+                            dotStyle = "bg-orange-500";
+                          } else if (ping.ms > 200) {
+                            badgeStyle = "bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400";
+                            dotStyle = "bg-amber-500";
+                          }
+
+                          return (
+                            <button 
+                              onClick={() => rePingSingleServer(server)}
+                              title={t.pingReTest}
+                              className={`text-xs font-semibold px-2.5 py-1.5 flex items-center gap-1.5 rounded-md ${badgeStyle} hover:opacity-80 transition-opacity cursor-pointer`}
+                            >
+                              <span className={`w-2 h-2 rounded-full ${dotStyle} animate-pulse`}></span>
+                              <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
+                              <span>{ping.ms} ms</span>
+                            </button>
+                          );
                         }
 
                         return (
                           <button 
                             onClick={() => rePingSingleServer(server)}
                             title={t.pingReTest}
-                            className={`text-xs font-semibold px-2.5 py-1 flex items-center gap-1.5 rounded-md ${badgeStyle} hover:opacity-80 transition-opacity`}
+                            className="text-xs font-semibold px-2.5 py-1.5 flex items-center gap-1.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-500/10 dark:text-rose-400 hover:opacity-80 transition-opacity cursor-pointer"
                           >
-                            <span className={`w-2 h-2 rounded-full ${dotStyle} animate-pulse`}></span>
-                            <Zap className="w-3 h-3 text-amber-500 fill-amber-500" />
-                            <span>{ping.ms} ms</span>
+                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>{t.offline}</span>
                           </button>
                         );
-                      }
+                      })()}
 
-                      return (
-                        <button 
-                          onClick={() => rePingSingleServer(server)}
-                          title={t.pingReTest}
-                          className="text-xs font-semibold px-2.5 py-1 flex items-center gap-1.5 rounded-md bg-rose-100 text-rose-800 dark:bg-rose-500/10 dark:text-rose-400 hover:opacity-80 transition-opacity"
-                        >
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          <span>{t.offline}</span>
-                        </button>
-                      );
-                    })()}
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-300 mb-1.5">
-                    <Globe className="w-4 h-4 text-sky-500 shrink-0 animate-pulse" />
-                    <span>{server.location}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 mb-3.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>{server.description}</span>
+                      {/* QR Code Button (placed directly in the red box area beneath Ping) */}
+                      <button
+                        onClick={() => setSelectedQrServer(server)}
+                        className="text-xs font-semibold px-2.5 py-1.5 flex items-center gap-1.5 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 dark:bg-cyan-500/15 dark:hover:bg-cyan-500/25 border border-cyan-400/40 dark:border-cyan-400/30 transition-all cursor-pointer shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
+                        title={language === 'my' ? 'QR Code ကြည့်ရန် / Scan ဖတ်ရန်' : 'View / Scan QR Code'}
+                      >
+                        <QrCode className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                        <span>{t.qrBtn}</span>
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -524,6 +680,107 @@ export function Servers() {
         isOpen={showNotice} 
         onClose={() => setShowNotice(false)} 
       />
+
+      {/* Server QR Code Modal Popup */}
+      {selectedQrServer && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setSelectedQrServer(null)}
+        >
+          <div 
+            className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-[#0c1222] border border-cyan-500/30 dark:border-cyan-400/30 shadow-2xl p-5 sm:p-6 overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Background cyan neon glow */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between mb-4 relative z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/20 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-orbitron font-bold text-base sm:text-lg text-stone-900 dark:text-white tracking-wide">
+                    {selectedQrServer.name}
+                  </h3>
+                  <p className="text-xs text-cyan-600 dark:text-cyan-400 font-medium">
+                    {selectedQrServer.description || 'VLESS / Trojan Config'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedQrServer(null)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+                title={t.qrCloseBtn || 'Close'}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* QR Code Container */}
+            <div className="relative z-10 flex flex-col items-center justify-center py-2">
+              <div className="bg-white p-3.5 rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.15)] border border-stone-200 dark:border-cyan-500/30 flex items-center justify-center">
+                <QRCodeCanvas
+                  id={`server-qr-canvas-${selectedQrServer.id}`}
+                  value={selectedQrServer.config}
+                  size={185}
+                  level="H"
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                  className="block rounded-md"
+                />
+              </div>
+
+              <div className="mt-3.5 text-center">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 text-xs font-semibold">
+                  <span>⚡ Scan with v2rayNG / Sing-box / Hiddify</span>
+                </div>
+                <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1.5">
+                  {selectedQrServer.location}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2.5 mt-5 relative z-10">
+              <button
+                onClick={async () => {
+                  await handleCopy(selectedQrServer.id, selectedQrServer.config);
+                  setQrModalCopied(true);
+                  setTimeout(() => setQrModalCopied(false), 2000);
+                }}
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs ${
+                  qrModalCopied
+                    ? 'bg-emerald-500 text-white scale-[1.01]'
+                    : 'bg-stone-900 hover:bg-stone-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white'
+                }`}
+              >
+                {qrModalCopied ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>{t.copied}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    <span>{t.serverCopyBtn}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => handleDownloadServerQR(selectedQrServer)}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>{t.qrDownloadBtn || 'QR သိမ်းမည်'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
