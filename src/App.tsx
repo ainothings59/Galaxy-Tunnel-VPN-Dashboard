@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Toast } from './components/Toast';
@@ -10,9 +10,51 @@ import { Settings } from './pages/Settings';
 import { SublinkGenerator } from './pages/SublinkGenerator';
 import { Page } from './types';
 
+function getPageFromPathname(pathname: string): Page {
+  const path = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  if (path === '/download' || path.startsWith('/download/') || path === '/apps') {
+    return 'apps';
+  }
+  if (path === '/sublink') {
+    return 'sublink';
+  }
+  if (path === '/settings') {
+    return 'settings';
+  }
+  if (path === '/contact') {
+    return 'contact';
+  }
+  return 'servers';
+}
+
+const PAGE_PATHS: Record<Page, string> = {
+  servers: '/',
+  sublink: '/sublink',
+  apps: '/download/galaxytunnel_apk',
+  settings: '/settings',
+  contact: '/contact',
+};
+
 function AppContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [page, setPage] = useState<Page>('servers');
+  const [page, setPage] = useState<Page>(() => getPageFromPathname(window.location.pathname));
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPage(getPageFromPathname(window.location.pathname));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleNavigate = (nextPage: Page) => {
+    setPage(nextPage);
+    const targetPath = PAGE_PATHS[nextPage] || '/';
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const renderPage = () => {
     switch (page) {
@@ -33,7 +75,7 @@ function AppContent() {
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         currentPage={page}
-        onNavigate={setPage}
+        onNavigate={handleNavigate}
       />
       
       <main className="max-w-xl mx-auto px-4 py-6">
