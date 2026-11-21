@@ -4,9 +4,9 @@ import { useAppContext } from '../contexts/AppContext';
 import { i18n } from '../i18n';
 
 const GALAXY_DIRECT_APK_URL =
-  'https://download1478.mediafire.com/z8f7krm7ab8gmVxEaPDOGfSn3nzmeNWYFtNdR_-wcsF9NCprg9q8IeAgyv36bfTfGPND0HQgITCU10SQBxD5MHaL2WA6XlNY2eLstKqzk3DiPd8AqapN6Y13Zo_FS_lkgSGIYbpJyZebI-CXgX0O4ZumQQRqgTMhC3aZjrlpTWSyNOc/ttxhoa204bs3p3h/Galaxy_Tunnel_V1.1.1.apk';
+  'https://download1589.mediafire.com/0fkdg75tc08gP8sRbxVD9zjBt1T8aJRHmI97PWD7VmNLrri9FOBBoiqVZkAnyiVJ7Aq_jAkzMToEKs7TU504V5pY_LlFhv_Vys_tNGUuWswadiZNIUbNY6sHLZyPVgTaoGuQ-L6pOGJcWk7MAk_FdWLBv7OIhACwk7mm6GHtSpO4-A/um1kjyec4k6ige9/Galaxy_Tunnel_V1.1.0.apk';
 const GALAXY_MIRROR_URL =
-  'https://www.mediafire.com/file/ttxhoa204bs3p3h/Galaxy_Tunnel_V1.1.1.apk/file';
+  'https://www.mediafire.com/file/um1kjyec4k6ige9/Galaxy_Tunnel_V1.1.0.apk/file';
 
 export function Apps() {
   const { language, showToast } = useAppContext();
@@ -105,7 +105,7 @@ export function Apps() {
                       Galaxy Tunnel
                     </h2>
                     <span className="px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-cyan-700 dark:text-cyan-300 text-[11px] font-bold">
-                      v1.1.1
+                      v1.1.0
                     </span>
                   </div>
                   <div className="inline-flex items-center gap-1 mt-1 text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-cyan-400">
@@ -186,7 +186,7 @@ export function Apps() {
             {/* Primary One-Click Direct APK Download Button */}
             <a
               href={GALAXY_DIRECT_APK_URL}
-              download="Galaxy_Tunnel_V1.1.1.apk"
+              download="Galaxy_Tunnel_V1.1.0.apk"
               rel="noopener noreferrer"
               className="w-full relative overflow-hidden group flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 hover:from-cyan-500 hover:via-sky-500 hover:to-blue-500 transition-all shadow-[0_4px_20px_rgba(14,165,233,0.35)] hover:shadow-[0_6px_25px_rgba(14,165,233,0.5)] active:scale-[0.99]"
             >
