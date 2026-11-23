@@ -4,7 +4,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { i18n } from '../i18n';
 
 const GALAXY_DIRECT_APK_URL =
-  'https://download1589.mediafire.com/0fkdg75tc08gP8sRbxVD9zjBt1T8aJRHmI97PWD7VmNLrri9FOBBoiqVZkAnyiVJ7Aq_jAkzMToEKs7TU504V5pY_LlFhv_Vys_tNGUuWswadiZNIUbNY6sHLZyPVgTaoGuQ-L6pOGJcWk7MAk_FdWLBv7OIhACwk7mm6GHtSpO4-A/um1kjyec4k6ige9/Galaxy_Tunnel_V1.1.0.apk';
+  'https://www.mediafire.com/file/um1kjyec4k6ige9/Galaxy_Tunnel_V1.1.0.apk/file?dkey=r8bdrkoexbv&r=1508';
 const GALAXY_MIRROR_URL =
   'https://www.mediafire.com/file/um1kjyec4k6ige9/Galaxy_Tunnel_V1.1.0.apk/file';
 
@@ -183,10 +183,10 @@ export function Apps() {
               </span>
             </div>
 
-            {/* Primary One-Click Direct APK Download Button */}
+            {/* Primary APK Download Button */}
             <a
               href={GALAXY_DIRECT_APK_URL}
-              download="Galaxy_Tunnel_V1.1.0.apk"
+              target="_blank"
               rel="noopener noreferrer"
               className="w-full relative overflow-hidden group flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 hover:from-cyan-500 hover:via-sky-500 hover:to-blue-500 transition-all shadow-[0_4px_20px_rgba(14,165,233,0.35)] hover:shadow-[0_6px_25px_rgba(14,165,233,0.5)] active:scale-[0.99]"
             >
